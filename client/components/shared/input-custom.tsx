@@ -1,33 +1,36 @@
-import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function InputCustom({
   placeholder,
   isPassword,
+  type,
   ...props
 }: any) {
   const [showPassword, setShowPassword] = useState(false);
   return (
     <>
       {isPassword ? (
-        <div className="flex justify-between gap-2">
+        <div className="relative">
           <Input
             {...props}
             placeholder={placeholder}
             type={showPassword ? "text" : "password"}
           />
-          <Button
-            size="sm"
-            variant="link"
-            className={"text-sm px-0"}
+          <div
+            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
             onClick={() => setShowPassword(!showPassword)}
           >
-            {showPassword ? "Hide" : "Show"}
-          </Button>
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </div>
         </div>
       ) : (
-        <Input {...props} placeholder={placeholder} type="text" />
+        <Input {...props} placeholder={placeholder} type={type} />
       )}
     </>
   );

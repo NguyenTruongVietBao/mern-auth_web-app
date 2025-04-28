@@ -5,6 +5,7 @@ const UserSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, "Please provide a name"],
+      minlength: 3,
     },
     email: {
       type: String,
@@ -25,10 +26,15 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    refreshToken: {
+      type: String,
+    },
     verificationToken: String,
     verificationTokenExpire: Date,
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+    failedLoginAttempts: {type: Number, default: 0},
+    lockUntil: Date,
   },
   { timestamps: true }
 );

@@ -1,41 +1,76 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
-const generateJWTToken = (res, userId) => {
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
-  });
-  res.cookie("token", token, {
-    httpOnly: true, // cookie cannot be accessed by client side scripts
-    secure: process.env.NODE_ENV === "production", // cookie will only be set on https
-    sameSite: "strict", // cookie will only be set on the same site
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
-  return token;
+const accessTokenCookieOptions = {
+    httpOnly: true, // ngăn JavaScript truy cập.
+    secure: process.env.NODE_ENV === "production",  // đảm bảo cookie chỉ gửi qua HTTPS.
+    sameSite: "strict", //để ngăn cookie gửi trong các yêu cầu cross-site (giảm nguy cơ CSRF).
+    path: "/",
+    maxAge: 15 * 60 * 1000, // 15'
 };
 
-const verifyJWTToken = (token) => {
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET);
-  } catch (err) {
-    return null;
-  }
+const refreshTokenCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 7 * 60 * 60 * 1000, // 7 ngày
 };
 
-const generateVerifyToken = () => {
-  const token = crypto.randomInt(100000, 999999).toString();
-  return token;
+const generateAccessToken = (res, userId) => {
+    return jwt.sign({userId}, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: 60 * 60 * 1000,
+    });
 };
 
-const generateResetToken = () => {
-  // Generate token
-  const resetToken = crypto.randomBytes(32).toString("hex");
-  return resetToken;
+const generateRefreshToken = (res, userId) => {
+    return jwt.sign({userId}, process.env.REFRESH_TOKEN_SECRET, {
+        expiresIn: 7 * 60 * 60 * 1000,
+    });
+
+};
+
+const decodeRefreshToken = (token) => {
+    try {
+        return jwt.decode(token);
+    } catch (err) {
+        return null;
+    }
+};
+
+const verifyAccessToken = (token) => {
+    try {
+        return jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    } catch (err) {
+        return null;
+    }
+};
+
+const verifyRefreshToken = (token) => {
+    try {
+        return jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+    } catch (err) {
+        return null;
+    }
+};
+
+const generateVerifyEmailToken = () => {
+    return crypto.randomInt(100000, 999999).toString();
+};
+
+const generateResetPasswordToken = () => {
+    return crypto.randomBytes(32).toString("hex");
+
 };
 
 module.exports = {
-  generateJWTToken,
-  generateVerifyToken,
-  generateResetToken,
-  verifyJWTToken,
+    generateAccessToken,
+    generateRefreshToken,
+    verifyAccessToken,
+    generateVerifyEmailToken,
+    generateResetPasswordToken,
+    verifyRefreshToken,
+    accessTokenCookieOptions,
+    refreshTokenCookieOptions,
+    decodeRefreshToken
 };

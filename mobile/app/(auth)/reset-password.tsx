@@ -10,9 +10,7 @@ export default function ResetPasswordScreen() {
 
     const handleReset = async () => {
         try {
-            const res = await axios.put(`http://localhost:8080/api/auth/reset-password/${token}`, {
-                password,
-            });
+
             Alert.alert("Success", "Password reset successfully");
             router.replace("/login");
         } catch (err) {

@@ -1,34 +1,24 @@
-import authConfig from "./auth.config";
-import NextAuth from "next-auth";
-import { privateRoutes } from "./routes";
+import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
-const { auth } = NextAuth(authConfig);
+const privatePaths = ['/dashboard', '/settings'];
+const unprotectedPaths = ['/login', '/register'];
 
-export default auth(async (req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
+export function middleware(req: NextRequest) {
+    const { pathname } = req.nextUrl;
+    const isAuth = Boolean(req.cookies.get('refreshToken')?.value);
 
-  const isPrivateRoute = privateRoutes.includes(nextUrl.pathname);
-  const isAuthRoute = nextUrl.pathname.includes("/auth");
-  const isApiRoute = nextUrl.pathname.includes("/api");
+    if (privatePaths.some(path => pathname.startsWith(path)) && !isAuth) {
+        return NextResponse.redirect(new URL('/login', req.url));
+    }
 
-  if (isApiRoute) {
-    return;
-  }
-  if (isAuthRoute && isLoggedIn) {
-    // return Response.redirect(new URL("/", nextUrl));
-    return Response.redirect("http://localhost:3000/dashboard");
-  }
-  if (isAuthRoute && !isLoggedIn) {
-    // return Response.redirect(new URL("/auth/login", nextUrl));
-    return;
-  }
+    if (unprotectedPaths.some(path => pathname.startsWith(path)) && isAuth) {
+        return NextResponse.redirect(new URL('/', req.url));
+    }
 
-  if (isPrivateRoute && !isLoggedIn) {
-    return Response.redirect(new URL("/auth/login", nextUrl));
-  }
-});
+    return NextResponse.next();
+}
 
 export const config = {
-  matcher: ["/((?!api|_next/ static|_next/ image|favicon. ico).*)"],
+    matcher: ['/dashboard/:path*', '/settings/:path*'],
 };
