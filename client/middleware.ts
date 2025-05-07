@@ -27,7 +27,9 @@ export function middleware(req: NextRequest) {
 
   // Chưa đăng nhập
   if (isPrivatePath && !refreshToken) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    const url = new URL("/login", req.url);
+    url.searchParams.set("clearTokens", "true");
+    return NextResponse.redirect(url);
   }
 
   // Đã đăng nhập
@@ -37,20 +39,13 @@ export function middleware(req: NextRequest) {
 
   // Đăng nhập rồi nhưng Access Token hết hạn
   if (isPrivatePath && !accessToken && refreshToken) {
-    try {
-      console.log("Access Token hết hạn");
-      const url = new URL("/refresh-token", req.url);
-      url.searchParams.set("refreshToken", refreshToken);
-      url.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(url);
-    } catch (error) {
-      console.error("Token decode error:", error);
-      const response = NextResponse.redirect(new URL("/login", req.url));
-      response.cookies.delete("accessToken");
-      response.cookies.delete("refreshToken");
-      return response;
-    }
+    console.log("Access Token hết hạn");
+    const url = new URL("/refresh-token", req.url);
+    url.searchParams.set("refreshToken", refreshToken);
+    url.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(url);
   }
+
   // if (isPrivatePath && refreshToken) {
   //   try {
   //     if (accessToken) {

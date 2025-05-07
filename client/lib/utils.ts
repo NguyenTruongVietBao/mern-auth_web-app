@@ -55,6 +55,7 @@ export const checkAndRefreshToken = async (param?: {
 
   // Nếu RefreshToken hết hạn thì cần đăng nhập lại
   if (isRefreshTokenExpired) {
+    console.log("RefreshToken expired");
     removeAccessTokenFromLocalStorage();
     removeRefreshTokenFromLocalStorage();
     param?.onError && param.onError();

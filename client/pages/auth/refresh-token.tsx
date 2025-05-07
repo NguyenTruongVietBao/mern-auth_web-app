@@ -26,6 +26,8 @@ function RefreshTokenPage() {
           router.push(redirectFromUrl || "/");
         },
       });
+    } else {
+      router.push("/");
     }
   }, [redirectFromUrl, refreshTokenFromUrl, router]);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useLogoutMutation } from "@/queries/useAuth";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -12,29 +12,50 @@ import { LucideClockFading } from "lucide-react";
 function LogoutPage() {
   const { mutateAsync } = useLogoutMutation();
   const router = useRouter();
+  const ref = useRef<any>(null);
   const searchParams = useSearchParams();
 
   const refreshTokenFromUrl = searchParams?.get("refreshToken");
   const accessTokenFromUrl = searchParams?.get("accessToken");
 
   useEffect(() => {
-    const idTimer = setTimeout(() => {
-      if (
-        (refreshTokenFromUrl &&
-          refreshTokenFromUrl === getRefreshTokenFromLocalStorage()) ||
+    if (
+      !ref.current &&
+      ((refreshTokenFromUrl &&
+        refreshTokenFromUrl === getRefreshTokenFromLocalStorage()) ||
         (accessTokenFromUrl &&
-          accessTokenFromUrl === getAccessTokenFromLocalStorage())
-      ) {
-        mutateAsync().then(() => {
-          router.push("/login");
-        });
-      }
-    }, 200);
+          accessTokenFromUrl === getAccessTokenFromLocalStorage()))
+    ) {
+      ref.current = mutateAsync;
+      mutateAsync().then(() => {
+        setTimeout(() => {
+          ref.current = null;
+        }, 1000);
+        router.push("/login");
+      });
+    } else {
+      router.push("/");
+    }
+  }, [mutateAsync, router, refreshTokenFromUrl, accessTokenFromUrl]);
 
-    return () => {
-      clearTimeout(idTimer);
-    };
-  }, [accessTokenFromUrl, mutateAsync, refreshTokenFromUrl, router]);
+  // useEffect(() => {
+  //   const idTimer = setTimeout(() => {
+  //     if (
+  //       (refreshTokenFromUrl &&
+  //         refreshTokenFromUrl === getRefreshTokenFromLocalStorage()) ||
+  //       (accessTokenFromUrl &&
+  //         accessTokenFromUrl === getAccessTokenFromLocalStorage())
+  //     ) {
+  //       mutateAsync().then(() => {
+  //         router.push("/login");
+  //       });
+  //     }
+  //   }, 200);
+
+  //   return () => {
+  //     clearTimeout(idTimer);
+  //   };
+  // }, [accessTokenFromUrl, mutateAsync, refreshTokenFromUrl, router]);
 
   return (
     <div className="flex h-screen w-screen items-center justify-center">
