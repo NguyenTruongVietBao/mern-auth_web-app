@@ -17,12 +17,13 @@ import { useAppContext } from "@/stores/app-provider";
 export default function Header() {
   const logoutMutation = useLogoutMutation();
   const router = useRouter();
-  const { isAuth } = useAppContext();
+  const { isAuth, setIsAuth } = useAppContext();
 
   async function onLogout() {
     if (logoutMutation.isPending) return;
     try {
       await logoutMutation.mutateAsync();
+      setIsAuth(false);
       router.push("/login");
     } catch (e) {
       console.log("error", e);

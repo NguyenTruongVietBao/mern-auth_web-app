@@ -25,11 +25,13 @@ import {
   removeAccessTokenFromLocalStorage,
   removeRefreshTokenFromLocalStorage,
 } from "@/lib/utils";
+import { useAppContext } from "@/stores/app-provider";
 
 export function LoginForm() {
   const router = useRouter();
   const loginMutation = useLoginMutation();
   const searchParams = useSearchParams();
+  const { setIsAuth } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,8 +40,9 @@ export function LoginForm() {
     if (clearTokens) {
       removeAccessTokenFromLocalStorage();
       removeRefreshTokenFromLocalStorage();
+      setIsAuth(false);
     }
-  }, [searchParams]);
+  }, [searchParams, setIsAuth]);
 
   const form = useForm<LoginBodyType>({
     resolver: zodResolver(LoginBody),
@@ -75,6 +78,7 @@ export function LoginForm() {
       }
       setError(null);
       toast("Login Successful");
+      setIsAuth(true);
       router.push("/profile");
     } catch (error) {
       console.log("ERROR login-form: ", error);

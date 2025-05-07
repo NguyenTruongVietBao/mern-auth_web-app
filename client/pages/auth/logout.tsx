@@ -8,13 +8,14 @@ import {
   getRefreshTokenFromLocalStorage,
 } from "@/lib/utils";
 import { LucideClockFading } from "lucide-react";
+import { useAppContext } from "@/stores/app-provider";
 
 function LogoutPage() {
   const { mutateAsync } = useLogoutMutation();
   const router = useRouter();
   const ref = useRef<any>(null);
   const searchParams = useSearchParams();
-
+  const { setIsAuth } = useAppContext();
   const refreshTokenFromUrl = searchParams?.get("refreshToken");
   const accessTokenFromUrl = searchParams?.get("accessToken");
 
@@ -30,13 +31,14 @@ function LogoutPage() {
       mutateAsync().then(() => {
         setTimeout(() => {
           ref.current = null;
+          setIsAuth(false);
         }, 1000);
         router.push("/login");
       });
     } else {
       router.push("/");
     }
-  }, [mutateAsync, router, refreshTokenFromUrl, accessTokenFromUrl]);
+  }, [mutateAsync, router, refreshTokenFromUrl, accessTokenFromUrl, setIsAuth]);
 
   // useEffect(() => {
   //   const idTimer = setTimeout(() => {
