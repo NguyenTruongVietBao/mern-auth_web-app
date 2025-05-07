@@ -1,19 +1,15 @@
-import {Button} from "@/components/ui/button";
-import {ChevronRight} from "lucide-react";
-import Link from "next/link";
+import { Globe } from "@/components/magicui/globe";
+import { TypingAnimation } from "@/components/magicui/typing-animation";
+import { RetroGrid } from "@/components/magicui/retro-grid";
 
 export default function Home() {
-    return (
-        <div className="flex min-h-screen flex-col">
-            <main className="flex-1">
-                <Button className="bg-teal-500 hover:bg-teal-600">
-                    <Link href={'/register'}>Sign Up Free</Link>
-                    <ChevronRight className="ml-2 h-4 w-4"/>
-                </Button>
-                <Button variant="outline">
-                    <Link href={'/login'}>Login</Link>
-                </Button>
-            </main>
-        </div>
-    );
+  return (
+    <div className=" h-full w-full overflow-hidden">
+      <RetroGrid />
+      <TypingAnimation className={"text-5xl mb-2 font-bold text-center"}>
+        Landing Page
+      </TypingAnimation>
+      <Globe className={"mt-36"} />
+    </div>
+  );
 }

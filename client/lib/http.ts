@@ -1,134 +1,190 @@
 import envConfig from "@/configs/envConfig";
+import { normalizePath } from "@/lib/utils";
+import { redirect } from "next/navigation";
 
 type CustomOptions = RequestInit & {
-    baseUrl?: string | undefined;
-}
+  baseUrl?: string | undefined;
+};
 
 type HttpErrorPayload = {
-    success: boolean,
-    message: string
-}
+  success: boolean;
+  message: string;
+  data?: any;
+};
 
 export class HttpError extends Error {
-    status: number;
-    payload: any;
-    constructor({status, payload}: { status: number; payload: any}) {
-        super('Http Error');
-        this.status = status;
-        this.payload = payload;
-    }
+  status: number;
+  payload: HttpErrorPayload;
 
+  constructor({
+    status,
+    payload,
+  }: {
+    status: number;
+    payload: HttpErrorPayload;
+  }) {
+    super(payload.message || "Http Error");
+    this.status = status;
+    this.payload = payload;
+  }
+
+  getMessage(): string {
+    return this.payload.message;
+  }
 }
 
-export const isClient = () => typeof window !== 'undefined'
+let clientLogoutRequest: null | Promise<any> = null;
+const isClient = typeof window !== "undefined";
 
 const request = async <Response>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    url: string,
-    options?: CustomOptions | undefined
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  url: string,
+  options?: CustomOptions | undefined
 ) => {
-    let body: FormData | string | undefined = undefined
+  let body: FormData | string | undefined = undefined;
 
-    if (options?.body instanceof FormData) {
-        body = options.body
-    } else if (options?.body) {
-        body = JSON.stringify(options.body)
+  if (options?.body instanceof FormData) {
+    body = options.body;
+  } else if (options?.body) {
+    body = JSON.stringify(options.body);
+  }
+
+  const baseHeaders: {
+    [key: string]: string;
+  } =
+    body instanceof FormData
+      ? {}
+      : {
+          "Content-Type": "application/json",
+        };
+
+  if (isClient) {
+    const accessToken = localStorage.getItem("accessToken");
+    if (accessToken) {
+      baseHeaders.Authorization = `Bearer ${accessToken}`;
     }
-    const baseHeaders: {
-        [key: string]: string
-    } =
-        body instanceof FormData
-            ? {}
-            : {
-                'Content-Type': 'application/json'
-            }
-    if (isClient()) {
-        const accessToken = localStorage.getItem('accessToken')
-        if (accessToken) {
-            baseHeaders.Authorization = `Bearer ${accessToken}`
-        }
-    }
-    // baseUrl = '' -> Call api Next Server
-    const baseUrl =
-      options?.baseUrl === undefined
+  }
+
+  // baseUrl = '' -> Call api Next Server
+  const baseUrl =
+    options?.baseUrl === undefined
       ? envConfig.NEXT_PUBLIC_BACKEND_URL
       : options.baseUrl;
 
-    const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`
+  const fullUrl = `${baseUrl}/${normalizePath(url)}`;
 
-    const res = await fetch(fullUrl, {
-        ...options,
-        headers: {
-            ...baseHeaders,
-            ...options?.headers
-        } as any,
-        body,
-        method
-    })
-    // const { body: _, ...restOptions } = options || {};
-    // const res = await fetch(fullUrl, {
-    //     method: method,
-    //     headers: {
-    //         ...headers,
-    //         ...restOptions.headers
-    //     },
-    //     body: body,
-    //     ...restOptions,
-    // });
+  const res = await fetch(fullUrl, {
+    ...options,
+    headers: {
+      ...baseHeaders,
+      ...options?.headers,
+    } as any,
+    body,
+    method,
+  });
 
-    const payload: Response = await res.json()
+  let payload: any;
+  try {
+    payload = await res.json();
+  } catch (error) {
+    console.log("error", error);
+    payload = {
+      success: false,
+      message: "Failed to parse response body",
+    };
+  }
 
-    const data = {
+  if (!res.ok) {
+    const errorPayload: HttpErrorPayload = {
+      success: false,
+      message: payload.message || `Request failed with status ${res.status}`,
+    };
+
+    if (res.status === 401) {
+      if (isClient) {
+        if (!clientLogoutRequest) {
+          clientLogoutRequest = fetch("/api/auth/logout", {
+            method: "POST",
+            body: null,
+            headers: {
+              ...baseHeaders,
+            } as any,
+          });
+          try {
+            await clientLogoutRequest;
+          } catch (error) {
+            console.error("Logout error:", error);
+          } finally {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            clientLogoutRequest = null;
+            location.href = "/login";
+          }
+        }
+      } else {
+        // TH: Vẫn còn Access Token và gọi API ở Next Server dến Backend
+        const accessToken = (options?.headers as any)?.Authorization?.split(
+          "Bearer "
+        )[1];
+        redirect(`/logout?accessToken=${accessToken}`);
+      }
+    } else {
+      throw new HttpError({
         status: res.status,
-        payload
+        payload: errorPayload,
+      });
     }
+  }
 
-    // Interceptor là nơi chúng ta xử lý request và response trước khi trả về cho phía component
-    if (!res.ok) {
-        console.log('res error from http.ts', res);
-         if(res.status === 400){        // 400 - Bad Request
-            throw new HttpError(data as{
-                status: 400,
-                payload: HttpErrorPayload,
-            });
-        }else if (res.status === 401) {     // 401 - Unauthorized
-            throw new HttpError(data as {
-                status: 401,
-                payload: HttpErrorPayload,
-            });
-        }  else if(res.status === 403){     // 403 - Forbidden
-            throw new HttpError(data as {
-                status: 403,
-                payload: HttpErrorPayload,
-            });
-        } else if(res.status === 500){      // 500 - Internal Server Error
-            throw new HttpError(data as{
-                status: 500,
-                payload: HttpErrorPayload,
-            });
-        } else {
-             throw new HttpError({
-                 status: res.status,
-                 payload: payload as any,
-             });
-         }
+  if (isClient) {
+    const normalizeUrl = normalizePath(url);
+    if (normalizeUrl === "api/auth/login" && payload.success) {
+      const accessToken = payload.data?.accessToken;
+      const refreshToken = payload.data?.refreshToken;
+      if (accessToken && refreshToken) {
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
+      }
+    } else if (normalizeUrl === "api/auth/logout") {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
     }
-    return data;
-}
+  }
+
+  return {
+    status: res.status,
+    payload: payload as Response,
+  };
+};
 
 const http = {
-    get<Response>(url: string, options?: Omit<CustomOptions, 'body'> | undefined) {
-        return request<Response>('GET', url, options)
-    },
-    post<Response>(url: string, body: any, options?: Omit<CustomOptions, 'body'> | undefined) {
-        return request<Response>('POST', url, {...options, body} )
-    },
-    put<Response>(url: string, body: any, options?: Omit<CustomOptions, 'body'> | undefined) {
-        return request<Response>('PUT', url, {...options, body})
-    },
-    delete<Response>(url: string, body: any, options?: Omit<CustomOptions, 'body'> | undefined) {
-        return request<Response>('DELETE', url, {...options, body})
-    },
-}
+  get<Response>(
+    url: string,
+    options?: Omit<CustomOptions, "body"> | undefined
+  ) {
+    return request<Response>("GET", url, options);
+  },
+  post<Response>(
+    url: string,
+    body: any,
+    options?: Omit<CustomOptions, "body"> | undefined
+  ) {
+    return request<Response>("POST", url, { ...options, body });
+  },
+  put<Response>(
+    url: string,
+    body: any,
+    options?: Omit<CustomOptions, "body"> | undefined
+  ) {
+    return request<Response>("PUT", url, { ...options, body });
+  },
+  delete<Response>(
+    url: string,
+    body: any,
+    options?: Omit<CustomOptions, "body"> | undefined
+  ) {
+    return request<Response>("DELETE", url, { ...options, body });
+  },
+};
 
 export default http;

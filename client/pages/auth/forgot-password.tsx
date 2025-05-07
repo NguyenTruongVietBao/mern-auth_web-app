@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,8 +21,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import InputCustom from "@/components/shared/input-custom";
 import { Loader } from "lucide-react";
-import {useForgotPasswordMutation} from "@/queries/useAuth";
-import {toast} from "sonner";
+import { useForgotPasswordMutation } from "@/queries/useAuth";
+import { toast } from "sonner";
+import { HttpError } from "@/lib/http";
 
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
@@ -40,20 +41,26 @@ export default function ForgotPasswordPage() {
     try {
       setLoading(true);
       const res = await forgotPasswordMutation.mutateAsync(values);
-      if (res?.payload?.success) {
+      console.log("RES from forgot-password: ", res);
+      if (res.payload?.success) {
         setError(null);
-        setLoading(false);
-        toast('Check your email for the reset password link',{
+        toast("Check your email for the reset password link", {
           action: {
-            label: 'Go to email',
+            label: "Go to email",
             onClick: () => {
-              window.open('https://mail.google.com', '_blank');
+              window.open("https://mail.google.com", "_blank");
             },
-          }
-        })
+          },
+        });
       }
     } catch (error) {
-      setError("Error sending email");
+      if (error instanceof HttpError) {
+        console.log(`ERROR forgot-password: ${error}`);
+        setError(error.getMessage());
+      } else {
+        console.log("Unexpected error:", error);
+      }
+    } finally {
       setLoading(false);
     }
   }
@@ -63,9 +70,7 @@ export default function ForgotPasswordPage() {
       <ShineBorder shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]} />
       <CardHeader>
         <CardTitle>Reset Password</CardTitle>
-        <CardDescription>
-          Enter your email to reset password
-        </CardDescription>
+        <CardDescription>Enter your email to reset password</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 p-5">
@@ -86,9 +91,7 @@ export default function ForgotPasswordPage() {
           </div>
           {error && (
             <div>
-              <div className="text-red-500 text-sm">
-                {error}
-              </div>
+              <div className="text-red-500 text-sm">{error}</div>
             </div>
           )}
           <Button type={"submit"} disabled={loading}>

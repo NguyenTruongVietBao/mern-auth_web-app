@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import {cn, getAccessTokenFromLocalStorage} from "@/lib/utils";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -10,6 +10,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import {useEffect, useState} from "react";
 
 const components: { title: string; href: string; description: string }[] = [
   {
@@ -38,6 +39,7 @@ const components: { title: string; href: string; description: string }[] = [
 ];
 
 export function MenuItem() {
+
   return (
     <NavigationMenu>
       <NavigationMenuList>

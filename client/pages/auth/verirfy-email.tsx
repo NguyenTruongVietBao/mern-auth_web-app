@@ -23,15 +23,17 @@ import {useRouter, useSearchParams} from "next/navigation";
 import {useEffect, useState} from "react";
 import {useResendVerifyEmailTokenMutation, useVerifyEmailMutation} from "@/queries/useAuth";
 import {Loader} from "lucide-react";
+import {HttpError} from "@/lib/http";
 
 export default function VerifyEmailPage() {
-    const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const searchParams = useSearchParams();
-    const email = searchParams.get('email') || null;
     const [isResendDisabled, setIsResendDisabled] = useState(false);
     const [countdown, setCountdown] = useState(0);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const email = searchParams?.get('email') || '';
+
     const resendVerifyEmailTokenMutation = useResendVerifyEmailTokenMutation();
     const verifyEmailMutation = useVerifyEmailMutation();
 
@@ -65,7 +67,7 @@ export default function VerifyEmailPage() {
                 verificationToken: data.verificationToken,
             })
             console.log('res', res);
-            if (res?.payload?.success) {
+            if (res.payload.success) {
                 setError(null);
                 setLoading(false);
                 toast("Your account verified !",{
@@ -73,22 +75,27 @@ export default function VerifyEmailPage() {
                 });
                 router.push("/login");
             }
-
         } catch (error) {
-            setError("Invalid or expired token");
-            console.log(error);
+            if (error instanceof HttpError) {
+                console.log(`ERROR verify-email: ${error}`);
+                setError(error.getMessage());
+            } else {
+                console.log('Unexpected error:', error);
+            }
+        } finally {
+            setLoading(false);
         }
     }
 
     async function handleResend() {
-        if (isResendDisabled) return;
+        if (isResendDisabled || !email) return;
         try {
             setIsResendDisabled(true);
             setCountdown(30);
             toast("Verification token resent!", {
                 description: "Check your email",
             });
-            await resendVerifyEmailTokenMutation.mutateAsync({email: email as string});
+            await resendVerifyEmailTokenMutation.mutateAsync({email});
         } catch (error) {
             setError("Failed to resend verification token");
             console.log(error);
@@ -135,7 +142,7 @@ export default function VerifyEmailPage() {
                         </div>
                     </div>
                 )}
-                <Button type={"submit"} className={'cursor-pointer'}>
+                <Button disabled={loading} type={"submit"} className={'cursor-pointer'}>
                     {loading ? <Loader className="animate-spin"/> : "Submit"}
                 </Button>
             </form>

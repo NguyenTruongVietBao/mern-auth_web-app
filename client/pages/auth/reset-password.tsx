@@ -21,7 +21,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import InputCustom from "@/components/shared/input-custom";
 import { Loader } from "lucide-react";
-import {useParams, useRouter, useSearchParams} from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import { toast } from "sonner"
 import {useResetPasswordMutation} from "@/queries/useAuth";
 
@@ -30,10 +30,10 @@ export default function ResetPasswordPage() {
   const resetPasswordMutation = useResetPasswordMutation();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>("");
 
-  const token = searchParams.get('token');
-  const email = searchParams.get('email');
+  const token = searchParams?.get('token');
+  const email = searchParams?.get('email');
 
   const form = useForm<ResetPasswordBodyType>({
     resolver: zodResolver(ResetPasswordBody),
@@ -47,13 +47,18 @@ export default function ResetPasswordPage() {
     setLoading(true);
     console.log('values', values)
     try {
+      if (!token) {
+        setError("Missing reset token");
+        setLoading(false);
+        return;
+      }
       const res = await resetPasswordMutation.mutateAsync({
-        resetToken: token as string,
+        resetToken: token,
         body: values
       });
-        if (res?.payload?.success) {
+        if (res?.payload?.message) {
           setLoading(false);
-          setError(null);
+          setError(null as any);
           toast("Password reset successfully !")
           router.push('/login')
         }

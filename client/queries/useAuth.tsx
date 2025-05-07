@@ -1,46 +1,51 @@
-import {useMutation} from "@tanstack/react-query";
-import authApiRequest from "@/apiRequest/authApiRequest";
-import {ResetPasswordBodyType} from "@/schemas";
+import { useMutation } from "@tanstack/react-query";
+import auth from "@/apiRequest/auth";
+import { ResetPasswordBodyType } from "@/schemas";
 
 export const useLoginMutation = () => {
-    return useMutation({
-        mutationFn: authApiRequest.cLogin
-    });
-}
+  return useMutation({
+    mutationFn: auth.cLogin,
+  });
+};
 
 export const useLogoutMutation = () => {
-    return useMutation({
-        mutationFn: authApiRequest.cLogout
-    });
-}
+  return useMutation({
+    mutationFn: auth.cLogout,
+  });
+};
 
 export const useRegisterMutation = () => {
-    return useMutation({
-        mutationFn: authApiRequest.register
-    });
-}
+  return useMutation({
+    mutationFn: auth.register,
+  });
+};
 
 export const useVerifyEmailMutation = () => {
-    return useMutation({
-        mutationFn: authApiRequest.verifyEmail
-    });
-}
+  return useMutation({
+    mutationFn: auth.verifyEmail,
+  });
+};
 
 export const useResendVerifyEmailTokenMutation = () => {
-    return useMutation({
-        mutationFn: authApiRequest.resendVerifyEmailToken
-    });
-}
+  return useMutation({
+    mutationFn: auth.resendVerifyEmailToken,
+  });
+};
 
 export const useForgotPasswordMutation = () => {
-    return useMutation({
-        mutationFn: authApiRequest.forgotPassword
-    });
-}
+  return useMutation({
+    mutationFn: auth.forgotPassword,
+  });
+};
 
 export const useResetPasswordMutation = () => {
-    return useMutation({
-        mutationFn: ({ resetToken, body }: { resetToken: string, body: ResetPasswordBodyType }) =>
-          authApiRequest.resetPassword(resetToken, body)
-    });
-}
+  return useMutation({
+    mutationFn: ({
+      resetToken,
+      body,
+    }: {
+      resetToken: string;
+      body: ResetPasswordBodyType;
+    }) => auth.resetPassword(resetToken, body),
+  });
+};

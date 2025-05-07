@@ -33,18 +33,15 @@ export function LoginForm() {
         setLoading(true);
         try {
             const result = await loginMutation.mutateAsync(data);
-            console.log("result from next server", result);
+            console.log("Login Response: ", result);
 
-            if(result.payload?.status === 400) {
-                setError(result.payload?.payload?.message);
+            if(result.payload.status === 400 || result.payload?.status === 401) {
+                setError(result.payload?.payload?.message || "Invalid Credentials");
                 return;
-            }else if(result.payload?.status === 401) {
-                setError(result.payload?.payload?.message);
-                return;
-            }else if (result.payload?.status === 403) {
-                setError(result.payload?.payload?.message);
+            }else if (result.payload.status === 403) {
+                setError(result.payload?.payload?.message || "Account is unactive.");
                 toast("Unactive account", {
-                    description: result.payload?.payload?.message,
+                    description: result.payload.payload?.message,
                     action: {
                         label: "Activate now",
                         onClick: () => {
@@ -54,33 +51,19 @@ export function LoginForm() {
                 })
                 return;
             }
-            const accessToken = result?.payload?.data?.accessToken;
-            localStorage.setItem("accessToken", accessToken);
-
             toast("Login Successful")
-
-            router.push("/dashboard");
-
+            router.push("/profile");
         } catch (error) {
-            setError('An error occurred while logging in');
+            console.log('ERROR login-form: ', error);
+            setError('ERROR login-form');
         } finally {
             setLoading(false);
         }
     };
-    // toast("Forbidden", {
-    //     description: error.payload?.error || "Account not activated",
-    //     action: {
-    //         label: "Activate now",
-    //         onClick: () => {
-    //             router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
-    //         },
-    //     },
-    //     duration: 5000,
-    // });
     return (
         <Card className={"w-[450px] shadow-md mx-auto mt-10 p-4"}>
             <CardHeader className={"text-2xl font-bold text-center"}>
-                Login
+                Login Form
             </CardHeader>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit, (error)=>{
@@ -94,7 +77,7 @@ export function LoginForm() {
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
-                                        <InputCustom placeholder="email" {...field} />
+                                        <InputCustom placeholder="johndoe@gmail.com" {...field} />
                                     </FormControl>
                                     <FormMessage/>
                                 </FormItem>
@@ -109,7 +92,7 @@ export function LoginForm() {
                                     <FormControl>
                                         <InputCustom
                                             isPassword={true}
-                                            placeholder="password"
+                                            placeholder="******"
                                             {...field}
                                         />
                                     </FormControl>

@@ -1,12 +1,31 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
+const parseDuration = (durationStr) => {
+    const match = durationStr.match(/^(\d+)([smhd])$/);
+    if (!match) throw new Error("Invalid duration format (e.g., 15m, 30s)");
+
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+
+    switch (unit) {
+        case 's': return value * 1000;
+        case 'm': return value * 60 * 1000;
+        case 'h': return value * 60 * 60 * 1000;
+        case 'd': return value * 24 * 60 * 60 * 1000;
+        default: throw new Error("Invalid time unit");
+    }
+};
+
+const accessTokenExpiresInMs = parseDuration(process.env.ACCESS_TOKEN_EXPIRES_IN);
+const refreshTokenExpiresInMs = parseDuration(process.env.REFRESH_TOKEN_EXPIRES_IN);
+
 const accessTokenCookieOptions = {
     httpOnly: true, // ngăn JavaScript truy cập.
     secure: process.env.NODE_ENV === "production",  // đảm bảo cookie chỉ gửi qua HTTPS.
-    sameSite: "strict", //để ngăn cookie gửi trong các yêu cầu cross-site (giảm nguy cơ CSRF).
+    sameSite: "strict", //để ngăn cookie gửi trong các yêu cầu cross-site
     path: "/",
-    maxAge: 15 * 60 * 1000, // 15'
+    maxAge: accessTokenExpiresInMs,
 };
 
 const refreshTokenCookieOptions = {
@@ -14,18 +33,18 @@ const refreshTokenCookieOptions = {
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     path: "/",
-    maxAge: 7 * 60 * 60 * 1000, // 7 ngày
+    maxAge: refreshTokenExpiresInMs,
 };
 
 const generateAccessToken = (res, userId) => {
     return jwt.sign({userId}, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: 60 * 60 * 1000,
+        expiresIn:  process.env.ACCESS_TOKEN_EXPIRES_IN,
     });
 };
 
 const generateRefreshToken = (res, userId) => {
     return jwt.sign({userId}, process.env.REFRESH_TOKEN_SECRET, {
-        expiresIn: 7 * 60 * 60 * 1000,
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
     });
 
 };
@@ -63,6 +82,7 @@ const generateResetPasswordToken = () => {
 
 };
 
+
 module.exports = {
     generateAccessToken,
     generateRefreshToken,
@@ -74,3 +94,4 @@ module.exports = {
     refreshTokenCookieOptions,
     decodeRefreshToken
 };
+
