@@ -15,19 +15,22 @@ export const normalizePath = (path: string) => {
 
 export const getAccessTokenFromLocalStorage = () =>
   isBrowser ? localStorage.getItem("accessToken") : null;
-
 export const getRefreshTokenFromLocalStorage = () =>
   isBrowser ? localStorage.getItem("refreshToken") : null;
 
 export const setAccessTokenToLocalStorage = (accessToken: string) =>
   isBrowser ? localStorage.setItem("accessToken", accessToken) : null;
-
 export const setRefreshTokenToLocalStorage = (refreshToken: string) =>
   isBrowser ? localStorage.setItem("refreshToken", refreshToken) : null;
 
+export const removeAccessTokenFromLocalStorage = () =>
+  isBrowser ? localStorage.removeItem("accessToken") : null;
+export const removeRefreshTokenFromLocalStorage = () =>
+  isBrowser ? localStorage.removeItem("refreshToken") : null;
+
 export const checkAndRefreshToken = async (param?: {
   onError?: () => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }) => {
   // Không nên đưa logic lấy accessToken và refreshToken khỏi checkAndRefreshToken
   // Vì mỗi lần checkAndRefreshToken được gọi sẽ lấy lại accessToken và refreshToken mới
@@ -52,6 +55,9 @@ export const checkAndRefreshToken = async (param?: {
 
   // Nếu RefreshToken hết hạn thì cần đăng nhập lại
   if (isRefreshTokenExpired) {
+    removeAccessTokenFromLocalStorage();
+    removeRefreshTokenFromLocalStorage();
+    param?.onError && param.onError();
     return;
   }
 

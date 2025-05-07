@@ -1,15 +1,8 @@
 "use client";
 
-import auth from "@/apiRequest/auth";
-import {
-  checkAndRefreshToken,
-  getAccessTokenFromLocalStorage,
-  getRefreshTokenFromLocalStorage,
-  setAccessTokenToLocalStorage,
-  setRefreshTokenToLocalStorage,
-} from "@/lib/utils";
-import { jwtDecode } from "jwt-decode";
+import { checkAndRefreshToken } from "@/lib/utils";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 // Không check Refresh Token
@@ -21,8 +14,9 @@ const UNAUTHORIZED_PATHS = [
   "refresh-token",
 ];
 
-export default function RefreshToken() {
+export default function RefreshTokenChecking() {
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     if (UNAUTHORIZED_PATHS.includes(pathname || "")) {
@@ -34,17 +28,25 @@ export default function RefreshToken() {
     checkAndRefreshToken({
       onError: () => {
         clearInterval(interval);
+        router.push("/login");
       },
     });
 
     // Timeout interval < tg hết hạn của accessToken
     const TIMEOUT_INTERVAL = 1000;
-    interval = setInterval(checkAndRefreshToken, TIMEOUT_INTERVAL);
+    interval = setInterval(() => {
+      checkAndRefreshToken({
+        onError: () => {
+          clearInterval(interval);
+          router.push("/login");
+        },
+      });
+    }, TIMEOUT_INTERVAL);
 
     return () => {
       clearInterval(interval);
     };
-  }, [pathname]);
+  }, [pathname, router]);
 
   return null;
 }
